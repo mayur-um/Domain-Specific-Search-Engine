@@ -21,22 +21,22 @@ Developed for the Dr. AIT Information Science & Engineering curriculum.
 - **Contextual snippets:** matched words highlighted, with the page number where the match was found.
 - **Open Document:** each result links to the original PDF.
 - **Bulk upload:** upload several PDF / DOCX / TXT files at once. Re-uploading a file replaces its old index entries (no double counting).
-- **Auto-indexing:** files in `sample_docs/` are indexed automatically at startup when the index is empty.
+- **Auto-indexing:** files in `backend/sample_docs/` are indexed automatically at startup when the index is empty.
 - **Text cache:** extracted text is stored once at upload time, so searches do not re-parse PDFs (tens of milliseconds per query in local tests).
 - **Security:** only `.pdf`, `.docx` and `.txt` uploads are accepted, with a 50 MB size limit; filenames are sanitized with `secure_filename()` (blocks path traversal); snippets are HTML-escaped before highlighting (blocks XSS).
-- **Automated tests:** a `pytest` suite covers stemming, snippets, upload security and ranking.
+- **Automated tests:** a test suite covers stemming, snippets, upload security and ranking.
 - **Responsive UI:** works on desktop and mobile.
 
 ## How it works
-1. **Upload / index:** text is extracted per page (PyPDF2 / python-docx) and lowercased. Page markers are stripped, then the text is tokenized and **stemmed**. An inverted index maps each stem to `{document: count}`; document lengths are stored for ranking. Both are saved as JSON in `data/`.
+1. **Upload / index:** text is extracted per page (PyPDF2 / python-docx) and lowercased. Page markers are stripped, then the text is tokenized and **stemmed**. An inverted index maps each stem to `{document: count}`; document lengths are stored for ranking. Both are saved as JSON in `backend/data/`.
 2. **Search:** the query is lowercased, stopwords are removed, and the remaining words are stemmed. For each query stem, BM25 (k1 = 1.5, b = 0.75) and smoothed TF-IDF are computed per document and summed. Results are sorted by BM25.
 3. **Snippet:** a window around the first match is taken from the cached text, escaped, then all query words are highlighted (matched by stem). The page number comes from page markers inserted during extraction.
 
 ## Tech stack
-- **Frontend:** React, Vite
+- **Frontend:** React, Vite, Tailwind CSS, Lucide Icons, Framer Motion
 - **Backend:** Python, Flask, Flask-CORS, Gunicorn
 - **Libraries:** NLTK (Porter stemmer), PyPDF2, python-docx, PyCryptodome (encrypted PDFs), Werkzeug
-- **Testing:** pytest
+- **Testing:** pytest / unittest
 
 ## API
 | Method | Endpoint | Description |
@@ -49,10 +49,11 @@ Developed for the Dr. AIT Information Science & Engineering curriculum.
 1. Clone: `git clone https://github.com/kausthubh00/Domain-Specific-Search-Engine.git`
 2. Backend:
 ```bash
+   cd backend
    pip install -r requirements.txt
    python app.py
 ```
-   Runs on port 5000. On first start, every file in `sample_docs/` is indexed automatically.
+   Runs on port 5000. On first start, every file in `backend/sample_docs/` is indexed automatically.
 3. Frontend:
 ```bash
    cd frontend
@@ -64,17 +65,19 @@ Developed for the Dr. AIT Information Science & Engineering curriculum.
    VITE_API_URL=http://127.0.0.1:5000
 ```
    then restart `npm run dev`.
-4. Open the web page and search. You can also upload more PDFs from the page. The `data/` folder is not stored in the repository.
+4. Open the web page and search. You can also upload more PDFs from the page. The `backend/data/` folder is auto-generated and ignored by git.
 
 ## Running tests
-To run the automated `pytest` suite for security, NLP, and ranking validation:
+To run the automated test suite for security, NLP, and ranking validation:
 ```bash
-pip install -r requirements-dev.txt
+cd backend
+python test_app.py
+# or with pytest:
 python -m pytest test_app.py
 ```
 
 ## Evaluation
-Run with `python evaluate.py` while the backend is running. There are **7 indexed documents** (BCS502 modules 1–4, a network-layer unit, a lab manual and a model question paper) and two query sets of 16 queries each. Every result is compared with a **random-order baseline** (the 7 documents shuffled 2,000 times per query).
+Run from `backend` with `python evaluate.py` while the backend is running. There are **7 indexed documents** (BCS502 modules 1–4, a network-layer unit, a lab manual and a model question paper) and two query sets of 16 queries each. Every result is compared with a **random-order baseline** (the 7 documents shuffled 2,000 times per query).
 
 **Set A: natural-language questions, relevance judged by hand.** For each question such as "How does CSMA/CD handle collisions?", I read the documents and marked those that actually explain the topic.
 
@@ -110,10 +113,11 @@ Run with `python evaluate.py` while the backend is running. There are **7 indexe
 - The deployed site indexes only the files in `sample_docs/`; a local run with more documents may give different results.
 
 ## Deployment (Render)
+- **Root directory:** `backend` (or run from root with `cd backend`)
 - **Build command:** `pip install -r requirements.txt`
 - **Start command:** `gunicorn app:app --timeout 180` (the longer timeout leaves time for the startup indexing of `sample_docs/` on the free tier)
 - Set `VITE_API_URL` to the backend URL when building the frontend.
-- Documents in `sample_docs/` are indexed automatically after each deploy or restart. Files uploaded through the website are not kept.
+- Documents in `backend/sample_docs/` are indexed automatically after each deploy or restart. Files uploaded through the website are not kept.
 
 ## Future work
 - Spell correction ("did you mean")
@@ -124,13 +128,19 @@ Run with `python evaluate.py` while the backend is running. There are **7 indexe
 
 ## Project structure
 ```text
-app.py                Flask API, indexing, ranking, snippets
-evaluate.py           Evaluation script (Hits@1, Recall@5, MRR, random baseline)
-test_app.py           pytest tests
-terms_count.py        Helper that counts terms per document (used to label Set B)
-requirements.txt      Backend dependencies
-requirements-dev.txt  Test dependencies
-sample_docs/          Documents indexed automatically at startup
-frontend/             React + Vite web interface
-screenshots/          Images used in this README
+backend/
+├── app.py                Flask API, indexing, ranking, snippets
+├── evaluate.py           Evaluation script (Hits@1, Recall@5, MRR, random baseline)
+├── test_app.py           Test suite (NLP stemming, snippet markers, upload security, ranking)
+├── terms_count.py        Helper that counts terms per document (used to label Set B)
+├── requirements.txt      Backend dependencies
+├── requirements-dev.txt  Test dependencies
+├── sample_docs/          Documents indexed automatically at startup
+└── data/                 Generated inverted index and text cache (auto-generated)
+frontend/
+├── src/                  React components (App.jsx, App.css, main.jsx, index.css)
+├── public/               Static icons and assets
+├── package.json          Frontend dependencies & build scripts
+└── vite.config.js        Vite configuration
+screenshots/              Images used in this README
 ```

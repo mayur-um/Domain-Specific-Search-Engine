@@ -25,7 +25,9 @@ SHORT = {
 
 # Read the cached text files (data/<name>.pdf.txt)
 docs = {}
-for f in glob.glob(os.path.join("data", "*.txt")):
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+for f in glob.glob(os.path.join(DATA_DIR, "*.txt")):
     name = os.path.basename(f)
     name = name[:-8] if name.endswith(".pdf.txt") else name[:-4]
     with open(f, encoding="utf-8", errors="ignore") as fh:
