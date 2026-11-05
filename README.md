@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Domain-Specific Search Engine (VTU Information Science)
 
 A full-stack search engine for academic study material (PDF, DOCX, TXT). It builds an inverted index from documents and ranks results with **BM25**, with **TF-IDF** computed alongside as a baseline. Results show a highlighted snippet and the page number of the match, and link to the original document.
@@ -144,3 +145,7 @@ frontend/
 └── vite.config.js        Vite configuration
 screenshots/              Images used in this README
 ```
+=======
+# Domain-Specific-Search-Engine
+Design and Implementation of a Full-Text Document Search Engine Using Inverted Indexing and BM25 Ranking
+>>>>>>> 44eaf80afefcd02cc0ce199294929b4ab05c9df5
