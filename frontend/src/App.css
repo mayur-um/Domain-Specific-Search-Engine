@@ -1067,8 +1067,13 @@ mark {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==========================================================================
@@ -1114,4 +1119,24 @@ mark {
   .hero-title {
     font-size: 26px;
   }
+}
+
+
+.recent-searches-row {
+  margin-top: 10px;
+}
+
+.clear-history-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 8px;
+  transition: color 0.2s ease;
+}
+
+.clear-history-btn:hover {
+  color: #dc2626;
 }
