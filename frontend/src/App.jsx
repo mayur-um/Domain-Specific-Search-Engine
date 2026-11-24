@@ -32,8 +32,25 @@ function App() {
   const [query, setQuery] = useState('routing');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState([]);
-  const [hasSearched, setHasSearched] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Recent Searches - Store the last 5 searches
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem('dsse_recent_searches') || '[]'
+      );
+
+      return Array.isArray(saved)
+        ? saved
+          .filter(item => typeof item === 'string' && item.trim())
+          .slice(0, 5)
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Stats state
   const [stats, setStats] = useState({
@@ -101,8 +118,12 @@ function App() {
 
   useEffect(() => {
     fetchStats();
+
     // Run an initial search for sample view
-    handleSearch('routing');
+    handleSearch('routing', false);
+
+    // Intentionally run this initial search only once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -111,13 +132,25 @@ function App() {
     }
   }, [activeTab]);
 
+  // Persist recent searches in browser storage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'dsse_recent_searches',
+        JSON.stringify(recentSearches)
+      );
+    } catch (error) {
+      console.error('Failed to save recent searches:', error);
+    }
+  }, [recentSearches]);
+
   // Search function
-  const handleSearch = async (searchTerm) => {
+  const handleSearch = async (searchTerm, saveToHistory = true) => {
     const term = typeof searchTerm === 'string' ? searchTerm : query;
     if (!term.trim()) return;
 
     setIsSearching(true);
-    setHasSearched(true);
+
     setErrorMessage('');
 
     try {
@@ -131,6 +164,18 @@ function App() {
 
       const data = await response.json();
       setResults(data);
+
+      // Add successful searches to history
+      if (saveToHistory) {
+        const searchedTerm = term.trim();
+
+        setRecentSearches(previous => [
+          searchedTerm,
+          ...previous.filter(
+            item => item.toLowerCase() !== searchedTerm.toLowerCase()
+          )
+        ].slice(0, 5));
+      }
       setServerOnline(true);
       setStatusBanner(
         `Search completed: Found ${data.length} document(s) matching "${term.trim()}".`
@@ -142,8 +187,8 @@ function App() {
       setServerOnline(false);
       setErrorMessage(
         'Could not connect to backend at ' +
-          API_BASE_URL +
-          '. Make sure the Flask server is running.'
+        API_BASE_URL +
+        '. Make sure the Flask server is running.'
       );
       setStatusBanner('Search failed: Backend server unreachable.');
     } finally {
@@ -378,6 +423,35 @@ function App() {
                 ))}
               </div>
             </div>
+
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && (
+              <div className="suggestions-row recent-searches-row">
+                <span className="try-label">Recent:</span>
+
+                {recentSearches.map(item => (
+                  <button
+                    key={item.toLowerCase()}
+                    type="button"
+                    className="suggestion-chip"
+                    onClick={() => {
+                      setQuery(item);
+                      handleSearch(item);
+                    }}
+                  >
+                    {item}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  className="clear-history-btn"
+                  onClick={() => setRecentSearches([])}
+                >
+                  Clear history
+                </button>
+              </div>
+            )}
 
             {/* MIDDLE CARDS: UPLOAD & SEARCH FEATURES */}
             <div className="cards-grid">
